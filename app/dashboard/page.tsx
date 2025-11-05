@@ -15,6 +15,7 @@ import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Empty from '@/components/ui/EmptyState'
 import Skeleton from '@/components/ui/Skeleton'
+import Header from '@/components/Header'
 
 interface Project {
   id: string
@@ -168,7 +169,7 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      label: 'کل پروژه‌ها',
+      label: 'Total Projects',
       value: dashboardStats.totalProjects.toString(),
       change: '+12%',
       trend: 'up',
@@ -176,7 +177,7 @@ export default function DashboardPage() {
       color: 'from-blue-500 to-cyan-500'
     },
     {
-      label: 'این ماه',
+      label: 'This Month',
       value: dashboardStats.thisMonth.toString(),
       change: '+25%',
       trend: 'up',
@@ -184,7 +185,7 @@ export default function DashboardPage() {
       color: 'from-green-500 to-teal-500'
     },
     {
-      label: 'بازدید کل',
+      label: 'Total Views',
       value: dashboardStats.totalViews >= 1000
         ? `${(dashboardStats.totalViews / 1000).toFixed(1)}K`
         : dashboardStats.totalViews.toString(),
@@ -194,7 +195,7 @@ export default function DashboardPage() {
       color: 'from-purple-500 to-pink-500'
     },
     {
-      label: 'دانلودها',
+      label: 'Downloads',
       value: dashboardStats.totalDownloads.toString(),
       change: '+8%',
       trend: 'up',
@@ -205,29 +206,29 @@ export default function DashboardPage() {
 
   const quickActions = [
     {
-      title: 'پروژه جدید',
-      description: 'شروع از صفحه خالی',
+      title: 'New Project',
+      description: 'Start from scratch',
       icon: Plus,
       color: 'from-primary-500 to-accent-500',
       href: '/editor'
     },
     {
-      title: 'از قالب',
-      description: '500+ قالب آماده',
+      title: 'From Template',
+      description: '500+ ready templates',
       icon: Palette,
       color: 'from-pink-500 to-rose-500',
       href: '/editor?tab=templates'
     },
     {
       title: 'AI Designer',
-      description: 'طراحی با هوش مصنوعی',
+      description: 'Design with AI',
       icon: Sparkles,
       color: 'from-purple-500 to-indigo-500',
       href: '/editor?ai=true'
     },
     {
-      title: 'نمایش 3D',
-      description: 'پیش‌نمایش سه‌بعدی',
+      title: '3D Preview',
+      description: '3D visualization',
       icon: Box,
       color: 'from-blue-500 to-cyan-500',
       href: '/preview-3d'
@@ -241,7 +242,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">در حال بارگذاری...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       </div>
     )
@@ -254,10 +255,10 @@ export default function DashboardPage() {
         <Card className="p-8 max-w-md">
           <div className="text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">خطا</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Error</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
             <Button variant="primary" onClick={() => router.push('/signin')}>
-              ورود به حساب
+              Sign In
             </Button>
           </div>
         </Card>
@@ -267,44 +268,9 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white">
-                داشبورد
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                خوش آمدید، {user?.name || user?.email}
-              </p>
-              {user && (
-                <Badge
-                  variant={user.plan === 'FREE' ? 'secondary' : user.plan === 'PRO' ? 'primary' : 'success'}
-                  size="sm"
-                  className="mt-2"
-                >
-                  {user.plan === 'FREE' ? 'رایگان' : user.plan === 'PRO' ? 'حرفه‌ای' : 'سازمانی'}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="secondary" size="md">
-                <Share2 className="w-5 h-5" />
-                اشتراک‌گذاری
-              </Button>
-              <Link href="/editor">
-                <Button variant="primary" size="md">
-                  <Plus className="w-5 h-5" />
-                  پروژه جدید
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header user={user} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
@@ -340,7 +306,7 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            شروع سریع
+            Quick Actions
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {quickActions.map((action, index) => (
@@ -375,18 +341,18 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              پروژه‌های من
+              My Projects
             </h2>
             <div className="flex items-center gap-3">
               {/* Search */}
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="جستجو..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -400,7 +366,7 @@ export default function DashboardPage() {
                       : 'text-gray-600 dark:text-gray-400'
                   }`}
                 >
-                  همه
+                  All
                 </button>
                 <button
                   onClick={() => setFilter('recent')}
@@ -410,7 +376,7 @@ export default function DashboardPage() {
                       : 'text-gray-600 dark:text-gray-400'
                   }`}
                 >
-                  اخیر
+                  Recent
                 </button>
                 <button
                   onClick={() => setFilter('starred')}
@@ -420,7 +386,7 @@ export default function DashboardPage() {
                       : 'text-gray-600 dark:text-gray-400'
                   }`}
                 >
-                  ستاره‌دار
+                  Starred
                 </button>
               </div>
 
@@ -464,15 +430,15 @@ export default function DashboardPage() {
           ) : projects.length === 0 ? (
             <Empty
               icon={FolderOpen}
-              title="هنوز پروژه‌ای ندارید"
-              description="اولین بیلبورد خود را با استفاده از قالب‌های آماده یا AI طراحی کنید"
+              title="No projects yet"
+              description="Create your first billboard using ready-made templates or AI"
               action={{
-                label: 'ایجاد پروژه جدید',
+                label: 'Create New Project',
                 onClick: () => window.location.href = '/editor',
                 icon: <Plus className="w-5 h-5" />
               }}
               secondaryAction={{
-                label: 'مشاهده قالب‌ها',
+                label: 'View Templates',
                 onClick: () => window.location.href = '/editor?tab=templates'
               }}
             />
@@ -529,7 +495,7 @@ export default function DashboardPage() {
                       {project._count && (
                         <span className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          {project._count.versions} نسخه
+                          {project._count.versions} versions
                         </span>
                       )}
                     </div>
@@ -537,11 +503,11 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
                       <span className="flex items-center gap-1">
                         <Eye className="w-3 h-3" />
-                        {project.viewsCount} بازدید
+                        {project.viewsCount} views
                       </span>
                       <span className="flex items-center gap-1">
                         <Download className="w-3 h-3" />
-                        {project.downloadsCount} دانلود
+                        {project.downloadsCount} downloads
                       </span>
                     </div>
 
@@ -554,12 +520,12 @@ export default function DashboardPage() {
                         }
                         size="sm"
                       >
-                        {project.status === 'PUBLISHED' ? 'منتشر شده' :
-                         project.status === 'ARCHIVED' ? 'بایگانی شده' :
-                         'پیش‌نویس'}
+                        {project.status === 'PUBLISHED' ? 'Published' :
+                         project.status === 'ARCHIVED' ? 'Archived' :
+                         'Draft'}
                       </Badge>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(project.updatedAt).toLocaleDateString('fa-IR')}
+                        {new Date(project.updatedAt).toLocaleDateString()}
                       </span>
                     </div>
                   </Card>
