@@ -1,36 +1,38 @@
 import type { Metadata } from 'next'
-import { Vazirmatn, Lalezar } from 'next/font/google'
+import { Inter, Poppins } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { ToastProvider } from '@/components/ToastProvider'
+import { BRAND } from '@/lib/constants'
 
-const vazirmatn = Vazirmatn({
-  subsets: ['arabic', 'latin'],
-  variable: '--font-vazirmatn',
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
   display: 'swap',
 })
 
-const lalezar = Lalezar({
-  weight: '400',
-  subsets: ['arabic', 'latin'],
-  variable: '--font-lalezar',
+const poppins = Poppins({
+  weight: ['400', '500', '600', '700', '800', '900'],
+  subsets: ['latin'],
+  variable: '--font-poppins',
   display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'بیلبورد مارکتینگ | ابزار هوش مصنوعی طراحی بیلبورد با قابلیت 3D',
-  description: 'پلتفرم پیشرفته طراحی بیلبورد با هوش مصنوعی و نمایش سه‌بعدی. ایجاد کمپین‌های تبلیغاتی حرفه‌ای با قالب‌های آماده و ابزارهای AI-Powered',
-  keywords: 'بیلبورد, طراحی تبلیغات, هوش مصنوعی, 3D, مارکتینگ, تبلیغات محیطی',
-  authors: [{ name: 'Billboard Marketing Team' }],
+  title: `${BRAND.name} | ${BRAND.tagline}`,
+  description: BRAND.description,
+  keywords: 'billboard design, AI design, 3D visualization, marketing, advertising, billboard templates, design automation',
+  authors: [{ name: BRAND.name }],
   openGraph: {
-    title: 'بیلبورد مارکتینگ - ابزار هوش مصنوعی طراحی بیلبورد',
-    description: 'طراحی بیلبوردهای حرفه‌ای با هوش مصنوعی و نمایش 3D',
+    title: `${BRAND.name} - ${BRAND.tagline}`,
+    description: BRAND.description,
     type: 'website',
-    locale: 'fa_IR',
+    url: BRAND.website,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'بیلبورد مارکتینگ',
-    description: 'طراحی بیلبوردهای حرفه‌ای با هوش مصنوعی',
+    title: BRAND.name,
+    description: BRAND.shortDescription,
   },
   robots: {
     index: true,
@@ -49,15 +51,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fa" dir="rtl" suppressHydrationWarning>
-      <body className={`${vazirmatn.variable} ${lalezar.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
+    <html lang="en" dir="ltr" suppressHydrationWarning>
+      <body className={`${inter.variable} ${poppins.variable} font-sans antialiased`}>
+        <ThemeProvider defaultTheme="system">
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
