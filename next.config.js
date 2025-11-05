@@ -18,10 +18,10 @@ const nextConfig = {
   // Optimize for production
   compress: true,
   poweredByHeader: false,
-  // RTL support
+  // i18n support
   i18n: {
-    locales: ['fa', 'en'],
-    defaultLocale: 'fa',
+    locales: ['en', 'fa'],
+    defaultLocale: 'en',
     localeDetection: true,
   },
 }
