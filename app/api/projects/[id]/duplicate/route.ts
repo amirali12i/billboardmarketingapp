@@ -156,12 +156,12 @@ export const POST = withAuth(
         data: {
           userId: auth.userId,
           action: 'PROJECT_CREATE',
-          metadata: {
+          metadata: JSON.stringify({
             projectId: duplicatedProject.id,
             projectName: duplicatedProject.name,
             duplicatedFrom: projectId,
             timestamp: new Date().toISOString(),
-          },
+          }),
         },
       })
 

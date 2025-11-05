@@ -212,7 +212,7 @@ export const POST = withAuth(async (req: NextRequest, context, auth) => {
         width,
         height,
         userId: auth.userId,
-        data: data || {},
+        data: JSON.stringify(data || {}),
         status: 'DRAFT',
         visibility: 'PRIVATE',
       },
@@ -256,11 +256,11 @@ export const POST = withAuth(async (req: NextRequest, context, auth) => {
       data: {
         userId: auth.userId,
         action: 'PROJECT_CREATE',
-        metadata: {
+        metadata: JSON.stringify({
           projectId: project.id,
           projectName: name,
           timestamp: new Date().toISOString(),
-        },
+        }),
       },
     })
 

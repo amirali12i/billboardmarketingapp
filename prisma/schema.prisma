@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -18,14 +18,14 @@ model User {
   avatar        String?
   emailVerified DateTime?
 
-  // Subscription
-  plan          Plan      @default(FREE)
+  // Subscription (String instead of enum for SQLite)
+  plan          String    @default("FREE") // FREE, PRO, ENTERPRISE
   planExpiry    DateTime?
 
   // Usage tracking
   projectsCount Int       @default(0)
   aiUsageCount  Int       @default(0)
-  storageUsed   BigInt    @default(0)
+  storageUsed   Int       @default(0)
 
   // Timestamps
   createdAt     DateTime  @default(now())
@@ -36,8 +36,10 @@ model User {
   projects      Project[]
   sessions      Session[]
   apiKeys       ApiKey[]
+  usageLogs     UsageLog[]
+  projectVersions ProjectVersion[]
+  collaborations ProjectCollaborator[]
 
-  @@index([email])
   @@map("users")
 }
 
@@ -52,8 +54,6 @@ model Session {
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([token])
   @@map("sessions")
 }
 
@@ -63,18 +63,20 @@ model Project {
   description String?
   thumbnail   String?
 
-  // Content
-  data        Json     @default("{}")
-  pages       Json     @default("[]")
+  // Content (String instead of Json for SQLite - will be serialized JSON)
+  data        String   @default("{}")
 
-  // Metadata
-  status      ProjectStatus @default(DRAFT)
-  visibility  Visibility    @default(PRIVATE)
+  // Dimensions
+  width       Int      @default(1920)
+  height      Int      @default(1080)
+
+  // Metadata (String instead of enum for SQLite)
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED, ARCHIVED
+  visibility  String   @default("PRIVATE") // PRIVATE, PUBLIC, UNLISTED
 
   // Stats
-  viewCount   Int      @default(0)
-  size        BigInt   @default(0)
-  pageCount   Int      @default(1)
+  viewsCount     Int      @default(0)
+  downloadsCount Int      @default(0)
 
   // Timestamps
   createdAt   DateTime @default(now())
@@ -87,9 +89,6 @@ model Project {
   versions    ProjectVersion[]
   collaborators ProjectCollaborator[]
 
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
   @@map("projects")
 }
 
@@ -97,14 +96,15 @@ model ProjectVersion {
   id          String   @id @default(cuid())
   projectId   String
   version     Int
-  data        Json
+  data        String   // JSON string
   description String?
   createdAt   DateTime @default(now())
+  createdById String
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation(fields: [createdById], references: [id])
 
   @@unique([projectId, version])
-  @@index([projectId])
   @@map("project_versions")
 }
 
@@ -112,14 +112,14 @@ model ProjectCollaborator {
   id          String   @id @default(cuid())
   projectId   String
   userId      String
-  role        CollaboratorRole @default(VIEWER)
-  invitedAt   DateTime @default(now())
-  acceptedAt  DateTime?
+  role        String   @default("VIEWER") // OWNER, ADMIN, EDITOR, VIEWER
+  addedAt     DateTime @default(now())
+  addedById   String?
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
-  @@index([projectId])
   @@map("project_collaborators")
 }
 
@@ -135,55 +135,17 @@ model ApiKey {
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([key])
   @@map("api_keys")
 }
 
 model UsageLog {
   id        String   @id @default(cuid())
   userId    String
-  action    UsageAction
-  metadata  Json?
+  action    String   // PROJECT_CREATE, PROJECT_UPDATE, AI_GENERATE_TEXT, etc.
+  metadata  String?  // JSON string
   createdAt DateTime @default(now())
 
-  @@index([userId])
-  @@index([createdAt])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("usage_logs")
-}
-
-// Enums
-enum Plan {
-  FREE
-  PRO
-  ENTERPRISE
-}
-
-enum ProjectStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-enum Visibility {
-  PRIVATE
-  PUBLIC
-  UNLISTED
-}
-
-enum CollaboratorRole {
-  OWNER
-  EDITOR
-  VIEWER
-}
-
-enum UsageAction {
-  PROJECT_CREATE
-  PROJECT_UPDATE
-  PROJECT_DELETE
-  AI_GENERATE_TEXT
-  AI_GENERATE_IMAGE
-  EXPORT_HD
-  EXPORT_4K
-  EXPORT_8K
 }

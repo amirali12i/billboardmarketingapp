@@ -169,6 +169,11 @@ export const PUT = withAuth(
 
       const { createVersion, ...updateData } = validation.data
 
+      // Convert data field to JSON string if present
+      if (updateData.data) {
+        updateData.data = JSON.stringify(updateData.data)
+      }
+
       // Get existing project
       const existingProject = await db.project.findUnique({
         where: { id: projectId },
@@ -241,11 +246,11 @@ export const PUT = withAuth(
         data: {
           userId: auth.userId,
           action: 'PROJECT_UPDATE',
-          metadata: {
+          metadata: JSON.stringify({
             projectId,
             projectName: updatedProject.name,
             timestamp: new Date().toISOString(),
-          },
+          }),
         },
       })
 
@@ -329,11 +334,11 @@ export const DELETE = withAuth(
         data: {
           userId: auth.userId,
           action: 'PROJECT_DELETE',
-          metadata: {
+          metadata: JSON.stringify({
             projectId,
             projectName: existingProject.name,
             timestamp: new Date().toISOString(),
-          },
+          }),
         },
       })
 
