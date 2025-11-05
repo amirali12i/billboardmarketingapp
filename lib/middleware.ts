@@ -4,6 +4,7 @@ import { getSession } from './auth'
 export interface AuthenticatedRequest extends NextRequest {
   userId?: string
   userEmail?: string
+  userRole?: string
   userPlan?: string
 }
 
@@ -29,8 +30,33 @@ export async function requireAuth(req: NextRequest) {
     session,
     userId: session.userId,
     userEmail: session.email,
+    userRole: session.role,
     userPlan: session.plan,
   }
+}
+
+/**
+ * Middleware to check if user is admin
+ */
+export async function requireAdmin(req: NextRequest) {
+  const auth = await requireAuth(req)
+
+  if ('error' in auth) {
+    return auth
+  }
+
+  if (auth.userRole !== 'ADMIN') {
+    return {
+      error: 'Forbidden',
+      status: 403,
+      response: NextResponse.json(
+        { error: 'Forbidden - Admin access required' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  return auth
 }
 
 /**
@@ -68,7 +94,7 @@ export function withAuth(
   handler: (
     req: NextRequest,
     context: { params?: any },
-    auth: { userId: string; userEmail: string; userPlan: string }
+    auth: { userId: string; userEmail: string; userRole: string; userPlan: string }
   ) => Promise<NextResponse>
 ) {
   return async (req: NextRequest, context: { params?: any }) => {
@@ -81,6 +107,33 @@ export function withAuth(
     return handler(req, context, {
       userId: auth.userId!,
       userEmail: auth.userEmail!,
+      userRole: auth.userRole!,
+      userPlan: auth.userPlan!,
+    })
+  }
+}
+
+/**
+ * Wrapper to handle API routes that require admin access
+ */
+export function withAdmin(
+  handler: (
+    req: NextRequest,
+    context: { params?: any },
+    auth: { userId: string; userEmail: string; userRole: string; userPlan: string }
+  ) => Promise<NextResponse>
+) {
+  return async (req: NextRequest, context: { params?: any }) => {
+    const auth = await requireAdmin(req)
+
+    if ('error' in auth) {
+      return auth.response
+    }
+
+    return handler(req, context, {
+      userId: auth.userId!,
+      userEmail: auth.userEmail!,
+      userRole: auth.userRole!,
       userPlan: auth.userPlan!,
     })
   }
@@ -94,7 +147,7 @@ export function withPlan(
   handler: (
     req: NextRequest,
     context: { params?: any },
-    auth: { userId: string; userEmail: string; userPlan: string }
+    auth: { userId: string; userEmail: string; userRole: string; userPlan: string }
   ) => Promise<NextResponse>
 ) {
   return async (req: NextRequest, context: { params?: any }) => {
@@ -107,6 +160,7 @@ export function withPlan(
     return handler(req, context, {
       userId: auth.userId!,
       userEmail: auth.userEmail!,
+      userRole: auth.userRole!,
       userPlan: auth.userPlan!,
     })
   }

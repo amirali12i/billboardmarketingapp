@@ -70,13 +70,14 @@ export default async function handler(
         id: true,
         email: true,
         name: true,
+        role: true,
         plan: true,
         createdAt: true,
       },
     })
 
     // Create session
-    await createSession(user.id, user.email, user.plan)
+    await createSession(user.id, user.email, user.role, user.plan)
 
     // Log usage
     await db.usageLog.create({

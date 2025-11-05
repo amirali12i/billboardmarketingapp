@@ -13,6 +13,7 @@ const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
 export interface SessionPayload {
   userId: string
   email: string
+  role: string
   plan: string
   expiresAt: Date
 }
@@ -25,10 +26,10 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword)
 }
 
-export async function createSession(userId: string, email: string, plan: string): Promise<string> {
+export async function createSession(userId: string, email: string, role: string, plan: string): Promise<string> {
   const expiresAt = new Date(Date.now() + SESSION_DURATION)
 
-  const token = await new SignJWT({ userId, email, plan, expiresAt: expiresAt.toISOString() })
+  const token = await new SignJWT({ userId, email, role, plan, expiresAt: expiresAt.toISOString() })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')
@@ -73,6 +74,7 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     return {
       userId: payload.userId as string,
       email: payload.email as string,
+      role: payload.role as string,
       plan: payload.plan as string,
       expiresAt: new Date(payload.expiresAt as string),
     }

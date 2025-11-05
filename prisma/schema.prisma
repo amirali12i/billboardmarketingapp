@@ -18,6 +18,9 @@ model User {
   avatar        String?
   emailVerified DateTime?
 
+  // Role-based access
+  role          String    @default("USER") // USER, ADMIN
+
   // Subscription (String instead of enum for SQLite)
   plan          String    @default("FREE") // FREE, PRO, ENTERPRISE
   planExpiry    DateTime?

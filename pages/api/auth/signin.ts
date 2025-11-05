@@ -70,7 +70,7 @@ export default async function handler(
     })
 
     // Create session
-    await createSession(user.id, user.email, user.plan)
+    await createSession(user.id, user.email, user.role, user.plan)
 
     return res.status(200).json({
       success: true,
