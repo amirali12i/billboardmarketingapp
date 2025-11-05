@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   Plus, FolderOpen, Clock, Star, Trash2, MoreVertical, Search,
   Grid, List, Filter, Download, Share2, Copy, Eye, TrendingUp,
   Users, Target, Zap, BarChart3, Calendar, ArrowRight, Sparkles,
-  Box, Palette, FileImage, Image as ImageIcon
+  Box, Palette, FileImage, Image as ImageIcon, AlertCircle
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
@@ -18,54 +19,157 @@ import Skeleton from '@/components/ui/Skeleton'
 interface Project {
   id: string
   name: string
-  thumbnail: string
-  lastModified: Date
-  status: 'draft' | 'published' | 'archived'
-  pages: number
-  size: string
+  description?: string | null
+  thumbnail?: string | null
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  visibility: 'PRIVATE' | 'PUBLIC' | 'UNLISTED'
+  width: number
+  height: number
+  viewsCount: number
+  downloadsCount: number
+  createdAt: string
+  updatedAt: string
+  _count?: {
+    versions: number
+    collaborators: number
+  }
+}
+
+interface User {
+  id: string
+  email: string
+  name: string | null
+  plan: 'FREE' | 'PRO' | 'ENTERPRISE'
+  projectsCount: number
+  aiUsageCount: number
+  storageUsed: number
+}
+
+interface DashboardData {
+  user: User
+  stats: {
+    totalProjects: number
+    thisMonth: number
+    totalViews: number
+    totalDownloads: number
+  }
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [filter, setFilter] = useState<'all' | 'recent' | 'starred'>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isProjectsLoading, setIsProjectsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Mock data - Replace with actual data fetching
-  const projects: Project[] = [
-    {
-      id: '1',
-      name: 'کمپین تابستانه 2025',
-      thumbnail: '/projects/1.jpg',
-      lastModified: new Date('2025-01-15'),
-      status: 'published',
-      pages: 3,
-      size: '2.4 MB'
-    },
-    {
-      id: '2',
-      name: 'برند ملی - بیلبورد اصلی',
-      thumbnail: '/projects/2.jpg',
-      lastModified: new Date('2025-01-14'),
-      status: 'draft',
-      pages: 5,
-      size: '3.1 MB'
-    },
-    {
-      id: '3',
-      name: 'فروش ویژه نوروز',
-      thumbnail: '/projects/3.jpg',
-      lastModified: new Date('2025-01-10'),
-      status: 'published',
-      pages: 2,
-      size: '1.8 MB'
+  const [user, setUser] = useState<User | null>(null)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [dashboardStats, setDashboardStats] = useState({
+    totalProjects: 0,
+    thisMonth: 0,
+    totalViews: 0,
+    totalDownloads: 0
+  })
+
+  // Fetch user data and stats
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('/api/auth/me')
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push('/signin')
+            return
+          }
+          throw new Error('Failed to fetch user data')
+        }
+
+        const data = await response.json()
+        setUser(data.user)
+        setDashboardStats({
+          totalProjects: data.user.projectsCount || 0,
+          thisMonth: 0, // Will be calculated from projects
+          totalViews: 0, // Will be calculated from projects
+          totalDownloads: 0 // Will be calculated from projects
+        })
+      } catch (err: any) {
+        console.error('Error fetching user data:', err)
+        setError(err.message)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  ]
+
+    fetchUserData()
+  }, [router])
+
+  // Fetch projects
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setIsProjectsLoading(true)
+      try {
+        const params = new URLSearchParams({
+          page: '1',
+          limit: '20',
+          sortBy: 'updatedAt',
+          sortOrder: 'desc'
+        })
+
+        if (searchQuery) {
+          params.append('search', searchQuery)
+        }
+
+        if (filter === 'recent') {
+          params.set('sortBy', 'updatedAt')
+        }
+
+        const response = await fetch(`/api/projects?${params.toString()}`)
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects')
+        }
+
+        const data = await response.json()
+        setProjects(data.data.projects || [])
+
+        // Calculate stats from projects
+        const totalViews = data.data.projects.reduce((sum: number, p: Project) => sum + p.viewsCount, 0)
+        const totalDownloads = data.data.projects.reduce((sum: number, p: Project) => sum + p.downloadsCount, 0)
+
+        // Count projects created this month
+        const now = new Date()
+        const thisMonth = data.data.projects.filter((p: Project) => {
+          const createdDate = new Date(p.createdAt)
+          return createdDate.getMonth() === now.getMonth() &&
+                 createdDate.getFullYear() === now.getFullYear()
+        }).length
+
+        setDashboardStats(prev => ({
+          ...prev,
+          totalViews,
+          totalDownloads,
+          thisMonth
+        }))
+      } catch (err: any) {
+        console.error('Error fetching projects:', err)
+        setError(err.message)
+      } finally {
+        setIsProjectsLoading(false)
+      }
+    }
+
+    if (user) {
+      fetchProjects()
+    }
+  }, [user, searchQuery, filter])
 
   const stats = [
     {
       label: 'کل پروژه‌ها',
-      value: '24',
+      value: dashboardStats.totalProjects.toString(),
       change: '+12%',
       trend: 'up',
       icon: FolderOpen,
@@ -73,7 +177,7 @@ export default function DashboardPage() {
     },
     {
       label: 'این ماه',
-      value: '8',
+      value: dashboardStats.thisMonth.toString(),
       change: '+25%',
       trend: 'up',
       icon: Calendar,
@@ -81,7 +185,9 @@ export default function DashboardPage() {
     },
     {
       label: 'بازدید کل',
-      value: '12.5K',
+      value: dashboardStats.totalViews >= 1000
+        ? `${(dashboardStats.totalViews / 1000).toFixed(1)}K`
+        : dashboardStats.totalViews.toString(),
       change: '+18%',
       trend: 'up',
       icon: Eye,
@@ -89,7 +195,7 @@ export default function DashboardPage() {
     },
     {
       label: 'دانلودها',
-      value: '342',
+      value: dashboardStats.totalDownloads.toString(),
       change: '+8%',
       trend: 'up',
       icon: Download,
@@ -128,26 +234,36 @@ export default function DashboardPage() {
     }
   ]
 
-  const recentActivity = [
-    {
-      action: 'ایجاد پروژه',
-      project: 'کمپین تابستانه',
-      time: '2 ساعت پیش',
-      icon: Plus
-    },
-    {
-      action: 'ویرایش',
-      project: 'برند ملی',
-      time: '5 ساعت پیش',
-      icon: FileImage
-    },
-    {
-      action: 'دانلود',
-      project: 'فروش ویژه',
-      time: '1 روز پیش',
-      icon: Download
-    }
-  ]
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">در حال بارگذاری...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error && !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Card className="p-8 max-w-md">
+          <div className="text-center">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">خطا</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+            <Button variant="primary" onClick={() => router.push('/signin')}>
+              ورود به حساب
+            </Button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -160,8 +276,17 @@ export default function DashboardPage() {
                 داشبورد
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
-                مدیریت پروژه‌های بیلبورد شما
+                خوش آمدید، {user?.name || user?.email}
               </p>
+              {user && (
+                <Badge
+                  variant={user.plan === 'FREE' ? 'secondary' : user.plan === 'PRO' ? 'primary' : 'success'}
+                  size="sm"
+                  className="mt-2"
+                >
+                  {user.plan === 'FREE' ? 'رایگان' : user.plan === 'PRO' ? 'حرفه‌ای' : 'سازمانی'}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <Button variant="secondary" size="md">
@@ -326,7 +451,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Projects Grid/List */}
-          {isLoading ? (
+          {isProjectsLoading ? (
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <Card key={i} className="p-4">
@@ -381,9 +506,16 @@ export default function DashboardPage() {
 
                     {/* Project Info */}
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                        {project.name}
-                      </h3>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                          {project.name}
+                        </h3>
+                        {project.description && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                            {project.description}
+                          </p>
+                        )}
+                      </div>
                       <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
                         <MoreVertical className="w-5 h-5 text-gray-400" />
                       </button>
@@ -391,21 +523,43 @@ export default function DashboardPage() {
 
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
                       <span className="flex items-center gap-1">
-                        <FileImage className="w-4 h-4" />
-                        {project.pages} صفحه
+                        <Box className="w-4 h-4" />
+                        {project.width}×{project.height}
                       </span>
-                      <span>{project.size}</span>
+                      {project._count && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {project._count.versions} نسخه
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        {project.viewsCount} بازدید
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Download className="w-3 h-3" />
+                        {project.downloadsCount} دانلود
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <Badge
-                        variant={project.status === 'published' ? 'success' : 'warning'}
+                        variant={
+                          project.status === 'PUBLISHED' ? 'success' :
+                          project.status === 'ARCHIVED' ? 'secondary' :
+                          'warning'
+                        }
                         size="sm"
                       >
-                        {project.status === 'published' ? 'منتشر شده' : 'پیش‌نویس'}
+                        {project.status === 'PUBLISHED' ? 'منتشر شده' :
+                         project.status === 'ARCHIVED' ? 'بایگانی شده' :
+                         'پیش‌نویس'}
                       </Badge>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {project.lastModified.toLocaleDateString('fa-IR')}
+                        {new Date(project.updatedAt).toLocaleDateString('fa-IR')}
                       </span>
                     </div>
                   </Card>
@@ -413,35 +567,6 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Recent Activity Sidebar */}
-        <div className="mt-8">
-          <Card className="p-6">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              فعالیت‌های اخیر
-            </h3>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <activity.icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {activity.action}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {activity.project}
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {activity.time}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
         </div>
       </div>
     </div>
